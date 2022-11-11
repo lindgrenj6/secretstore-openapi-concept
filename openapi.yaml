@@ -1,0 +1,302 @@
+openapi: 3.0.0
+info:
+  description: "This is a working document for the planned Sources + RHIVOS API for storing secrets"
+  version: v0.0.1
+  title: <Insert Quirky Name here>
+  contact:
+    email: jlindgre@redhat.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+externalDocs:
+  description: GitHub Repo
+  url: http://example.com
+servers:
+  - url: http://localhost:8000
+tags:
+  - name: info
+  - name: secrets
+paths:
+  /info:
+    get:
+      operationId: getInfo
+      summary: Get information on the currently running instance of <thing>
+      description: Get configured information about the currently running <thing>, which secret store, number of secrets, etc
+      tags:
+        - info
+      responses:
+        "200":
+          description: info output
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Info"
+    options:
+      operationId: optionsInfo
+      summary: Get information on the currently running instance of <thing>
+      description: Get configured information about the currently running <thing>, which secret store, number of secrets, etc
+      tags:
+        - info
+      responses:
+        "200":
+          description: info output
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Info"
+
+  /secrets:
+    post:
+      summary: Create a secret using the configured secret-store
+      description: Create a secret
+      operationId: createSecret
+      tags:
+        - secrets
+      requestBody:
+        $ref: "#/components/requestBodies/SecretCreate"
+      responses:
+        "200":
+          description: Succesfully created Secret
+        "400":
+          description: Invalid Input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Secret"
+    get:
+      summary: List all secrets, with a tag query param required
+      description: A list of secrets matching the tag requested, returning a 400 otherwise due to no tag specified
+      operationId: listSecretsByTag
+      parameters:
+        - $ref: '#/components/parameters/Tag'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      tags:
+        - secrets
+      responses:
+        200:
+          description: "A list of secrets matching the tag requested"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Secret"
+
+  /secrets/:id:
+    get:
+      summary: Fetch an individual secret by guid
+      description: Fetch an individual secret by guid
+      operationId: getSecret
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      tags:
+        - secrets
+      responses:
+        200:
+          description: the secret requested
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Secret'
+        404:
+          description: secret not found
+    patch:
+      summary: Edit an individual secret by guid
+      description: Edit an individual secret by guid
+      operationId: editSecret
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      tags:
+        - secrets
+      requestBody:
+        $ref: '#/components/requestBodies/SecretEdit'
+      responses:
+        201:
+          description: the edited secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Secret'
+        400:
+          description: bad request body
+        404:
+          description: secret not found
+    delete:
+      summary: Delete a secret
+      description: Delete a secret
+      operationId: deleteSecret
+      tags:
+        - secrets
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        204:
+          description: Secret Deleted
+        404:
+          description: secret not found
+
+  /secrets/:id/rotate:
+    put:
+      summary: Rotate a secret with a new value
+      description: Rotate a secret with a new value
+      operationId: rotateSecret
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      tags:
+        - secrets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                credential:
+                  type: string
+                expire:
+                  type: string
+                  format: date-time
+      responses:
+        202:
+          description: secret rotation queued
+        400:
+          description: bad request
+        404:
+          description: secret not found
+
+  /secrets/:id/expire:
+    put:
+      summary: Set an expiration for a secret
+      description: Set an expiration for a secret
+      operationId: expireSecret
+      tags:
+        - secrets
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                expire:
+                  type: string
+                  format: date-time
+      responses:
+        202:
+          description: secret expiry accepted
+        404:
+          description: secret not found
+
+components:
+  requestBodies:
+    # TODO: separate out create body from regular secret
+    SecretCreate:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Secret"
+      description: Secret to be created
+
+    # this limits the fields that are update-able from the client side
+    SecretEdit:
+      content:
+        application/json:
+          schema:
+            properties:
+              metadata:
+                type: object
+              tags:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+
+  parameters:
+    Tag:
+      name: tag
+      in: query
+      description: which tag(s) to return
+      required: true
+      schema:
+        example: foo
+        type: string
+        pattern: "^.+"
+
+    Id:
+      name: id
+      in: path
+      description: guid for a secret
+      required: true
+      schema:
+        example: 1234-4567-9101-1234
+        type: string
+
+    Page:
+      name: page
+      in: query
+      description: which page to fetch (no page specified = page 0)
+      schema:
+        example: 1
+        type: string
+        pattern: \d+
+
+    PageSize:
+      name: page_size
+      in: query
+      description: the size of page to fetch (default is 50)
+      schema:
+        example: 50
+        type: string
+        pattern: \d+
+
+  schemas:
+    Secret:
+      type: object
+      required:
+        - credential
+        - tags
+      properties:
+        id:
+          type: string
+          format: uuid
+        metadata:
+          type: object
+          description: any extra information about the secret, in json format
+        credential:
+          type: string
+          description: encrypted secret to store
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        last_rotated:
+          type: string
+          format: date-time
+        expire:
+          type: string
+          format: date-time
+          description: when the secret should expire
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+
+    Info:
+      type: object
+      properties:
+        uptime:
+          type: string
+          format: date-time
+          description: how long the system has been up
+        secret-store:
+          type: string
+          description: which store the instance is using for the secrets
+        num-secrets:
+          type: integer
+          description: the number of secrets currently stored
+
+    Tag:
+      type: string
+      description: a string tag for a secret
