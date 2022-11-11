@@ -2,6 +2,8 @@
 
 This repo contains an example OpenAPI Spec that can be used to generate client implementations and servers adhering to the spec, so the spec is really what defines what the interface is.
 
+There isn't a working name - but want to think of something quirky and fun! PRs welcome!
+
 Currently the spec specifies endpoints such as:
 |Operation|Endpoint|Description|
 |---|---|---|
