@@ -15,7 +15,7 @@ Currently the spec specifies endpoints such as:
 etc. the spec will fully tell what the reference implementation can/will do.
 
 ### Editing the spec:
-To view (and edit) the spec in the extremely nice swagger editor, go here: [editor-next.swagger.io](editor-next.swagger.io) and File -> Import from URL the raw spec in this directory
+To view (and edit) the spec in the extremely nice swagger editor, go here: [editor-next.swagger.io](https://editor-next.swagger.io) and File -> Import from URL the raw spec in this directory
 
 ### Validating the spec:
 The spec is validated on every push/PR, in order to manually validate it, just run `bin/validate.sh`
