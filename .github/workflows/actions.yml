@@ -1,0 +1,16 @@
+name: Actions
+
+on:
+- push
+- pull_request
+
+jobs:
+  ValidateOpenApiSpec:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: 'validate openapi schema'
+        uses: thiyagu06/openapi-validator-action@v1
+        with:
+          filepath: 'openapi.yaml'
